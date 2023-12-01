@@ -23,8 +23,6 @@ module {
   func.func private @rtrand(!Generator, index) -> (index)
   func.func private @rtdrand(!Generator) -> ()
 
-
-
   func.func @alloc_1d_filled_f64(%s1 : index, %f : f64) -> tensor<?xf64> {
     %buf = bufferization.alloc_tensor(%s1) : tensor<?xf64>
     %ret = linalg.fill ins(%f : f64) outs(%buf : tensor<?xf64>) -> tensor<?xf64>
@@ -52,22 +50,22 @@ module {
     return %tnsr : tensor<?xf64>
   }
 
-  func.func @conv_1d_sparse_dense(%arg0: tensor<?xf64, #INPUT>, %arg1: tensor<?xf64>, %arg2: tensor<?xf64>) -> tensor<?xf64> {
-    %0 = linalg.generic {indexing_maps = [#map, #map1, #map2], iterator_types = ["reduction", "parallel"]}
-         ins(%arg0, %arg1 : tensor<?xf64, #INPUT>, tensor<?xf64>) outs(%arg2 : tensor<?xf64>) attrs =  {sorted = true} {
-    ^bb0(%in: f64, %in_0: f64, %out: f64):
-      %1 = arith.mulf %in, %in_0 : f64
-      %2 = arith.addf %out, %1 : f64
-      linalg.yield %2 : f64
-    } -> tensor<?xf64>
-    return %0 : tensor<?xf64>
-  }
+   func.func @conv_1d_sparse_dense(%arg0: tensor<?xf64, #INPUT>, %arg1: tensor<?xf64>, %arg2: tensor<?xf64>) -> tensor<?xf64> {
+     %0 = linalg.generic {indexing_maps = [#map, #map1, #map2], iterator_types = ["reduction", "parallel"]}
+          ins(%arg0, %arg1 : tensor<?xf64, #INPUT>, tensor<?xf64>) outs(%arg2 : tensor<?xf64>) attrs =  {sorted = true} {
+     ^bb0(%in: f64, %in_0: f64, %out: f64):
+       %1 = arith.mulf %in, %in_0 : f64
+       %2 = arith.addf %out, %1 : f64
+       linalg.yield %2 : f64
+     } -> tensor<?xf64>
+     return %0 : tensor<?xf64>
+   }
 
-  // func.func @conv_1d_sparse_dense(%arg0: tensor<?xf64, #INPUT>, %arg1: tensor<?xf64>, %arg2: tensor<?xf64>) -> tensor<?xf64> {
-  //   %ret = linalg.conv_1d ins (%arg0, %arg1: tensor<?xf64, #INPUT>, tensor<?xf64>)
-  //                         outs (%arg2: tensor<?xf64>) -> tensor<?xf64>
-  //   return %ret : tensor<?xf64>
-  // }
+   // func.func @conv_1d_sparse_dense(%arg0: tensor<?xf64, #INPUT>, %arg1: tensor<?xf64>, %arg2: tensor<?xf64>) -> tensor<?xf64> {
+   //   %ret = linalg.conv_1d ins (%arg0, %arg1: tensor<?xf64, #INPUT>, tensor<?xf64>)
+   //                         outs (%arg2: tensor<?xf64>) -> tensor<?xf64>
+   //   return %ret : tensor<?xf64>
+   // }
 
   func.func @conv_1d_dense_dense(%arg0: tensor<?xf64>, %arg1: tensor<?xf64>, %arg2: tensor<?xf64>) -> tensor<?xf64> {
     %ret = linalg.conv_1d ins (%arg0, %arg1: tensor<?xf64>, tensor<?xf64>)
