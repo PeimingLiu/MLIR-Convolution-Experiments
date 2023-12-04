@@ -16,6 +16,15 @@
 #map1 = affine_map<(d0, d1, d2, d3) -> (d1, d2)>
 #map2 = affine_map<(d0, d1, d2, d3) -> (d0, d3)>
 
+#prrp = {
+  indexing_maps = [
+    affine_map<(d0, d1, d2, d3) -> (d0 + d1, d3 + d2)>,
+    affine_map<(d0, d1, d2, d3) -> (d1, d2)>,
+    affine_map<(d0, d1, d2, d3) -> (d0, d3)>
+  ],
+  iterator_types = ["parallel", "reduction", "reduction", "parallel"]
+}
+
 
 module {
   func.func private @getTensorFilename(index) -> (!Filename)
@@ -67,8 +76,7 @@ module {
   // }
 
   func.func @conv_2d_DC_dense(%arg0: tensor<?x?xf64, #DC>, %arg1: tensor<?x?xf64>, %arg2: tensor<?x?xf64>) -> tensor<?x?xf64> {
-    %0 = linalg.generic {indexing_maps = [#map, #map1, #map2],
-    iterator_types = ["parallel", "reduction", "reduction", "parallel"]}
+    %0 = linalg.generic #prrp
     ins(%arg0, %arg1 : tensor<?x?xf64, #DC>, tensor<?x?xf64>) outs(%arg2 : tensor<?x?xf64>) attrs =  {sorted = true} {
     ^bb0(%in: f64, %in_0: f64, %out: f64):
       %1 = arith.mulf %in, %in_0 : f64
@@ -79,10 +87,21 @@ module {
   }
 
 
+  // func.func @conv_2d_CC_dense(%arg0: tensor<?x?xf64, #CC>, %arg1: tensor<?x?xf64>, %arg2: tensor<?x?xf64>) -> tensor<?x?xf64> {
+  //   %ret = linalg.conv_2d ins (%arg0, %arg1: tensor<?x?xf64, #CC>, tensor<?x?xf64>)
+  //                         outs (%arg2: tensor<?x?xf64>) -> tensor<?x?xf64>
+  //   return %ret : tensor<?x?xf64>
+  // }
+
   func.func @conv_2d_CC_dense(%arg0: tensor<?x?xf64, #CC>, %arg1: tensor<?x?xf64>, %arg2: tensor<?x?xf64>) -> tensor<?x?xf64> {
-    %ret = linalg.conv_2d ins (%arg0, %arg1: tensor<?x?xf64, #CC>, tensor<?x?xf64>)
-                          outs (%arg2: tensor<?x?xf64>) -> tensor<?x?xf64>
-    return %ret : tensor<?x?xf64>
+    %0 = linalg.generic #prrp
+    ins(%arg0, %arg1 : tensor<?x?xf64, #CC>, tensor<?x?xf64>) outs(%arg2 : tensor<?x?xf64>) attrs =  {sorted = true} {
+    ^bb0(%in: f64, %in_0: f64, %out: f64):
+      %1 = arith.mulf %in, %in_0 : f64
+      %2 = arith.addf %out, %1 : f64
+      linalg.yield %2 : f64
+    } -> tensor<?x?xf64>
+    return %0 : tensor<?x?xf64>
   }
 
   //  func.func @conv_2d_dense_dense(%arg0: tensor<?x?xf64>, %arg1: tensor<?x?xf64>, %arg2: tensor<?x?xf64>) -> tensor<?x?xf64> {
@@ -92,8 +111,7 @@ module {
   //  }
 
   func.func @conv_2d_dense_dense(%arg0: tensor<?x?xf64>, %arg1: tensor<?x?xf64>, %arg2: tensor<?x?xf64>) -> tensor<?x?xf64> {
-    %0 = linalg.generic {indexing_maps = [#map, #map1, #map2],
-    iterator_types = ["parallel", "reduction", "reduction", "parallel"]}
+    %0 = linalg.generic #prrp
     ins(%arg0, %arg1 : tensor<?x?xf64>, tensor<?x?xf64>) outs(%arg2 : tensor<?x?xf64>) attrs =  {sorted = true} {
     ^bb0(%in: f64, %in_0: f64, %out: f64):
       %1 = arith.mulf %in, %in_0 : f64
@@ -147,7 +165,7 @@ module {
         %dense_ret = func.call @conv_2d_dense_dense(%dense_input, %filter, %dense_output)
                : (tensor<?x?xf64>, tensor<?x?xf64>, tensor<?x?xf64>) -> (tensor<?x?xf64>)
         %dense_end = func.call @rtclock() : () -> f64
-//        func.call @dump(%dense_ret) : (tensor<?x?xf64>) -> ()
+        // func.call @dump(%dense_ret) : (tensor<?x?xf64>) -> ()
         bufferization.dealloc_tensor %dense_ret : tensor<?x?xf64>
         %dense_time = arith.subf %dense_end, %dense_start : f64
         %dense_next = arith.addf %dense_sum, %dense_time : f64
@@ -158,7 +176,7 @@ module {
         %CC_ret = func.call @conv_2d_CC_dense(%CC_input, %filter, %CC_output)
                : (tensor<?x?xf64, #CC>, tensor<?x?xf64>, tensor<?x?xf64>) -> (tensor<?x?xf64>)
         %CC_end = func.call @rtclock() : () -> f64
-//        func.call @dump(%CC_ret) : (tensor<?x?xf64>) -> ()
+        // func.call @dump(%CC_ret) : (tensor<?x?xf64>) -> ()
         bufferization.dealloc_tensor %CC_ret : tensor<?x?xf64>
         %CC_time = arith.subf %CC_end, %CC_start : f64
         %CC_next = arith.addf %CC_sum, %CC_time : f64
@@ -168,7 +186,7 @@ module {
         %DC_ret = func.call @conv_2d_DC_dense(%DC_input, %filter, %DC_output)
                : (tensor<?x?xf64, #DC>, tensor<?x?xf64>, tensor<?x?xf64>) -> (tensor<?x?xf64>)
         %DC_end = func.call @rtclock() : () -> f64
-//        func.call @dump(%DC_ret) : (tensor<?x?xf64>) -> ()
+        // func.call @dump(%DC_ret) : (tensor<?x?xf64>) -> ()
         bufferization.dealloc_tensor %DC_ret : tensor<?x?xf64>
         %DC_time = arith.subf %DC_end, %DC_start : f64
         %DC_next = arith.addf %DC_sum, %DC_time : f64
