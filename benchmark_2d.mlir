@@ -67,9 +67,10 @@ module {
     return %ret : tensor<?x?xf64>
   }
 
-  func.func private @printMemref2dF32(%ptr : tensor<?x?xf64>) attributes { llvm.emit_c_interface }
+  func.func private @printMemrefF64(%ptr : tensor<*xf64>) attributes { llvm.emit_c_interface }
   func.func @dump(%arg0: tensor<?x?xf64>) {
-    call @printMemref2dF32(%arg0) : (tensor<?x?xf64>) -> ()
+    %mem = tensor.cast %arg0 : tensor<?x?xf64> to tensor<*xf64>
+    call @printMemrefF64(%mem) : (tensor<*xf64>) -> ()
     return
   }
 
