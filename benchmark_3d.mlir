@@ -32,13 +32,39 @@
 
 #rrrppp = {
   indexing_maps = [
-    affine_map<(d0, d1, d2, d3, d4, d5) -> (d0 + d1, d2 + d3, d4 + d5)>,
+    affine_map<(d0, d1, d2, d3, d4, d5) -> (d0 + d3, d1 + d4, d2 + d5)>,
     affine_map<(d0, d1, d2, d3, d4, d5) -> (d0, d1, d2)>,
     affine_map<(d0, d1, d2, d3, d4, d5) -> (d3, d4, d5)>
   ],
   iterator_types = ["reduction", "reduction", "reduction", "parallel", "parallel", "parallel"]
 }
 
+#prprpr = {
+  indexing_maps = [
+    affine_map<(d0, d1, d2, d3, d4, d5) -> (d0 + d1, d2 + d3, d4 + d5)>,
+    affine_map<(d0, d1, d2, d3, d4, d5) -> (d1, d3, d5)>,
+    affine_map<(d0, d1, d2, d3, d4, d5) -> (d0, d2, d4)>
+  ],
+  iterator_types = ["parallel", "reduction", "parallel", "reduction", "parallel", "reduction"]
+}
+
+#pprrrp = {
+  indexing_maps = [
+    affine_map<(d0, d1, d2, d3, d4, d5) -> (d0 + d2, d1 + d3, d4 + d5)>,
+    affine_map<(d0, d1, d2, d3, d4, d5) -> (d2, d3, d4)>,
+    affine_map<(d0, d1, d2, d3, d4, d5) -> (d0, d1, d5)>
+  ],
+  iterator_types = ["parallel", "parallel", "reduction", "reduction", "reduction", "parallel"]
+}
+
+#prrprp = {
+  indexing_maps = [
+    affine_map<(d0, d1, d2, d3, d4, d5) -> (d0 + d1, d2 + d3, d4 + d5)>,
+    affine_map<(d0, d1, d2, d3, d4, d5) -> (d1, d2, d4)>,
+    affine_map<(d0, d1, d2, d3, d4, d5) -> (d0, d3, d5)>
+  ],
+  iterator_types = ["parallel", "reduction", "reduction", "parallel", "reduction", "parallel"]
+}
 
 module {
   func.func private @getTensorFilename(index) -> (!Filename)
