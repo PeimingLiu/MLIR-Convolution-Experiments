@@ -153,22 +153,25 @@ module {
       // %nnz = sparse_tensor.number_of_entries %CCC_input : tensor<?x?x?xf64, #CCC>
       // vector.print %nnz : index
       %DCC_input = sparse_tensor.convert %dense_input: tensor<?x?x?xf64> to tensor<?x?x?xf64, #DCC>
+      %DDC_input = sparse_tensor.convert %dense_input: tensor<?x?x?xf64> to tensor<?x?x?xf64, #DDC>
 
       %repeat = arith.constant REPEAT : index
       %dense_time_t = arith.constant dense<0.0> : vector<REPEATxf64>
       %CCC_time_t = arith.constant dense<0.0> : vector<REPEATxf64>
       %DCC_time_t = arith.constant dense<0.0> : vector<REPEATxf64>
+      %DDC_time_t = arith.constant dense<0.0> : vector<REPEATxf64>
 
       // Run sparse conv
-      %dense_time, %CCC_time, %DCC_time = scf.for %iv = %c0 to %repeat step %c1
-        iter_args(%dense_sum = %dense_time_t, %CCC_sum = %CCC_time_t, %DCC_sum = %DCC_time_t) -> (vector<REPEATxf64>, vector<REPEATxf64>, vector<REPEATxf64>) {
+      %dense_time, %CCC_time, %DCC_time, %DDC_time = scf.for %iv = %c0 to %repeat step %c1
+        iter_args(%dense_sum = %dense_time_t, %CCC_sum = %CCC_time_t, %DCC_sum = %DCC_time_t, %DDC_sum = %DDC_time_t) ->
+                 (vector<REPEATxf64>, vector<REPEATxf64>, vector<REPEATxf64>, vector<REPEATxf64>) {
 
         %dense_output = func.call @alloc_3d_filled_f64(%OW, %OH, %OD, %output_elem) :(index, index, index, f64) -> (tensor<?x?x?xf64>)
         %dense_start = func.call @rtclock() : () -> f64
         %dense_ret = func.call @conv_3d_dense_dense_SCHEDULE(%dense_input, %filter, %dense_output)
                : (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>)
         %dense_end = func.call @rtclock() : () -> f64
-        func.call @dump(%dense_ret) : (tensor<?x?x?xf64>) -> ()
+        // func.call @dump(%dense_ret) : (tensor<?x?x?xf64>) -> ()
         bufferization.dealloc_tensor %dense_ret : tensor<?x?x?xf64>
         %dense_time = arith.subf %dense_end, %dense_start : f64
         %dense_next = vector.insertelement %dense_time, %dense_sum[%iv:index] : vector<REPEATxf64>
@@ -178,7 +181,7 @@ module {
         %CCC_ret = func.call @conv_3d_CCC_dense_SCHEDULE(%CCC_input, %filter, %CCC_output)
                : (tensor<?x?x?xf64, #CCC>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>)
         %CCC_end = func.call @rtclock() : () -> f64
-        func.call @dump(%CCC_ret) : (tensor<?x?x?xf64>) -> ()
+        // func.call @dump(%CCC_ret) : (tensor<?x?x?xf64>) -> ()
         bufferization.dealloc_tensor %CCC_ret : tensor<?x?x?xf64>
         %CCC_time = arith.subf %CCC_end, %CCC_start : f64
         %CCC_next = vector.insertelement %CCC_time, %CCC_sum[%iv:index] : vector<REPEATxf64>
@@ -188,30 +191,44 @@ module {
         %DCC_ret = func.call @conv_3d_DCC_dense_SCHEDULE(%DCC_input, %filter, %DCC_output)
                : (tensor<?x?x?xf64, #DCC>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>)
         %DCC_end = func.call @rtclock() : () -> f64
-        func.call @dump(%DCC_ret) : (tensor<?x?x?xf64>) -> ()
+        // func.call @dump(%DCC_ret) : (tensor<?x?x?xf64>) -> ()
         bufferization.dealloc_tensor %DCC_ret : tensor<?x?x?xf64>
         %DCC_time = arith.subf %DCC_end, %DCC_start : f64
         %DCC_next = vector.insertelement %DCC_time, %DCC_sum[%iv:index] : vector<REPEATxf64>
 
-        scf.yield %dense_next, %CCC_next, %DCC_next : vector<REPEATxf64>, vector<REPEATxf64>, vector<REPEATxf64>
+        %DDC_output = func.call @alloc_3d_filled_f64(%OW, %OH, %OD, %output_elem) :(index, index, index, f64) -> (tensor<?x?x?xf64>)
+        %DDC_start = func.call @rtclock() : () -> f64
+        %DDC_ret = func.call @conv_3d_DDC_dense_SCHEDULE(%DDC_input, %filter, %DDC_output)
+               : (tensor<?x?x?xf64, #DDC>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>)
+        %DDC_end = func.call @rtclock() : () -> f64
+        // func.call @dump(%DDC_ret) : (tensor<?x?x?xf64>) -> ()
+        bufferization.dealloc_tensor %DDC_ret : tensor<?x?x?xf64>
+        %DDC_time = arith.subf %DDC_end, %DDC_start : f64
+        %DDC_next = vector.insertelement %DDC_time, %DDC_sum[%iv:index] : vector<REPEATxf64>
+
+        scf.yield %dense_next, %CCC_next, %DCC_next, %DDC_next : vector<REPEATxf64>, vector<REPEATxf64>, vector<REPEATxf64>, vector<REPEATxf64>
       }
 
       bufferization.dealloc_tensor %dense_input : tensor<?x?x?xf64>
       bufferization.dealloc_tensor %CCC_input : tensor<?x?x?xf64, #CCC>
       bufferization.dealloc_tensor %DCC_input : tensor<?x?x?xf64, #DCC>
+      bufferization.dealloc_tensor %DDC_input : tensor<?x?x?xf64, #DDC>
       vector.print %input_sparsity : index // also the sparsity level
 
       %dense_time_min = vector.reduction <minf>, %dense_time : vector<REPEATxf64> into f64
       %CCC_time_min = vector.reduction <minf>, %CCC_time : vector<REPEATxf64> into f64
       %DCC_time_min = vector.reduction <minf>, %DCC_time : vector<REPEATxf64> into f64
+      %DDC_time_min = vector.reduction <minf>, %DDC_time : vector<REPEATxf64> into f64
 
       %dense_time_max = vector.reduction <maxf>, %dense_time : vector<REPEATxf64> into f64
       %CCC_time_max = vector.reduction <maxf>, %CCC_time : vector<REPEATxf64> into f64
       %DCC_time_max = vector.reduction <maxf>, %DCC_time : vector<REPEATxf64> into f64
+      %DDC_time_max = vector.reduction <maxf>, %DDC_time : vector<REPEATxf64> into f64
 
       %dense_time_sum = vector.reduction <add>, %dense_time, %f0 : vector<REPEATxf64> into f64
       %CCC_time_sum = vector.reduction <add>, %CCC_time, %f0 : vector<REPEATxf64> into f64
       %DCC_time_sum = vector.reduction <add>, %DCC_time, %f0 : vector<REPEATxf64> into f64
+      %DDC_time_sum = vector.reduction <add>, %DDC_time, %f0 : vector<REPEATxf64> into f64
 
       %dense_time_exc = arith.addf %dense_time_max, %dense_time_min : f64
       %dense_time_res = arith.subf %dense_time_sum, %dense_time_exc : f64
@@ -224,6 +241,10 @@ module {
       %DCC_time_exc = arith.addf %DCC_time_max, %DCC_time_min : f64
       %DCC_time_res = arith.subf %DCC_time_sum, %DCC_time_exc : f64
       vector.print %DCC_time_res : f64
+
+      %DDC_time_exc = arith.addf %DDC_time_max, %DDC_time_min : f64
+      %DDC_time_res = arith.subf %DDC_time_sum, %DDC_time_exc : f64
+      vector.print %DDC_time_res : f64
     }
 
     func.call @rtdrand(%g) : (!Generator) ->()
