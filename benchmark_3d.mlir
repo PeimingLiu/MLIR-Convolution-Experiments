@@ -48,13 +48,13 @@
   iterator_types = ["parallel", "reduction", "parallel", "reduction", "parallel", "reduction"]
 }
 
-#pprrrp = {
+#prpprr = {
   indexing_maps = [
-    affine_map<(d0, d1, d2, d3, d4, d5) -> (d0 + d2, d1 + d3, d4 + d5)>,
-    affine_map<(d0, d1, d2, d3, d4, d5) -> (d2, d3, d4)>,
-    affine_map<(d0, d1, d2, d3, d4, d5) -> (d0, d1, d5)>
+    affine_map<(d0, d1, d2, d3, d4, d5) -> (d0 + d1, d2 + d4, d3 + d5)>,
+    affine_map<(d0, d1, d2, d3, d4, d5) -> (d1, d2, d3)>,
+    affine_map<(d0, d1, d2, d3, d4, d5) -> (d0, d4, d5)>
   ],
-  iterator_types = ["parallel", "parallel", "reduction", "reduction", "reduction", "parallel"]
+  iterator_types = ["parallel", "reduction", "parallel", "parallel", "reduction", "reduction"]
 }
 
 #prrprp = {
@@ -205,7 +205,7 @@ module {
         %dense_output = func.call @alloc_3d_filled_f64(%OW, %OH, %OD, %output_elem) :(index, index, index, f64) -> (tensor<?x?x?xf64>)
         %dense_start = func.call @rtclock() : () -> f64
         %dense_ret = func.call @conv_3d_dense_dense_SCHEDULE(%dense_input, %filter, %dense_output)
-               : (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>)
+              : (tensor<?x?x?xf64>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>)
         %dense_end = func.call @rtclock() : () -> f64
         func.call @dump(%dense_ret) : (tensor<?x?x?xf64>) -> ()
         bufferization.dealloc_tensor %dense_ret : tensor<?x?x?xf64>
@@ -215,7 +215,7 @@ module {
         %CCC_output = func.call @alloc_3d_filled_f64(%OW, %OH, %OD, %output_elem) :(index, index, index, f64) -> (tensor<?x?x?xf64>)
         %CCC_start = func.call @rtclock() : () -> f64
         %CCC_ret = func.call @conv_3d_CCC_dense_SCHEDULE(%CCC_input, %filter, %CCC_output)
-               : (tensor<?x?x?xf64, #CCC>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>)
+              : (tensor<?x?x?xf64, #CCC>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>)
         %CCC_end = func.call @rtclock() : () -> f64
         func.call @dump(%CCC_ret) : (tensor<?x?x?xf64>) -> ()
         bufferization.dealloc_tensor %CCC_ret : tensor<?x?x?xf64>
@@ -225,7 +225,7 @@ module {
         %DCC_output = func.call @alloc_3d_filled_f64(%OW, %OH, %OD, %output_elem) :(index, index, index, f64) -> (tensor<?x?x?xf64>)
         %DCC_start = func.call @rtclock() : () -> f64
         %DCC_ret = func.call @conv_3d_DCC_dense_SCHEDULE(%DCC_input, %filter, %DCC_output)
-               : (tensor<?x?x?xf64, #DCC>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>)
+             : (tensor<?x?x?xf64, #DCC>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>)
         %DCC_end = func.call @rtclock() : () -> f64
         func.call @dump(%DCC_ret) : (tensor<?x?x?xf64>) -> ()
         bufferization.dealloc_tensor %DCC_ret : tensor<?x?x?xf64>
@@ -235,7 +235,7 @@ module {
         %DDC_output = func.call @alloc_3d_filled_f64(%OW, %OH, %OD, %output_elem) :(index, index, index, f64) -> (tensor<?x?x?xf64>)
         %DDC_start = func.call @rtclock() : () -> f64
         %DDC_ret = func.call @conv_3d_DDC_dense_SCHEDULE(%DDC_input, %filter, %DDC_output)
-               : (tensor<?x?x?xf64, #DDC>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>)
+              : (tensor<?x?x?xf64, #DDC>, tensor<?x?x?xf64>, tensor<?x?x?xf64>) -> (tensor<?x?x?xf64>)
         %DDC_end = func.call @rtclock() : () -> f64
         func.call @dump(%DDC_ret) : (tensor<?x?x?xf64>) -> ()
         bufferization.dealloc_tensor %DDC_ret : tensor<?x?x?xf64>
