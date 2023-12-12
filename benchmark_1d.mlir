@@ -12,6 +12,25 @@
 #map1 = affine_map<(d0, d1) -> (d0)>
 #map2 = affine_map<(d0, d1) -> (d1)>
 
+#pr = {
+  indexing_maps = [
+    affine_map<(d0, d1) -> (d1 + d0)>,
+    affine_map<(d0, d1) -> (d1)>,
+    affine_map<(d0, d1) -> (d0)>
+  ],
+  iterator_types = ["parallel", "reduction"]
+}
+
+#rp = {
+  indexing_maps = [
+    affine_map<(d0, d1) -> (d1 + d0)>,
+    affine_map<(d0, d1) -> (d0)>,
+    affine_map<(d0, d1) -> (d1)>
+  ],
+  iterator_types = ["reduction", "parallel"]
+}
+
+
 #INPUT = #sparse_tensor.encoding<{ map = (d0) -> (d0 : compressed) }>
 
 module {
@@ -51,7 +70,7 @@ module {
   }
 
    func.func @conv_1d_sparse_dense(%arg0: tensor<?xf64, #INPUT>, %arg1: tensor<?xf64>, %arg2: tensor<?xf64>) -> tensor<?xf64> {
-     %0 = linalg.generic {indexing_maps = [#map, #map1, #map2], iterator_types = ["reduction", "parallel"]}
+     %0 = linalg.generic #SCHEDULE
           ins(%arg0, %arg1 : tensor<?xf64, #INPUT>, tensor<?xf64>) outs(%arg2 : tensor<?xf64>) attrs =  {sorted = true} {
      ^bb0(%in: f64, %in_0: f64, %out: f64):
        %1 = arith.mulf %in, %in_0 : f64
@@ -61,16 +80,15 @@ module {
      return %0 : tensor<?xf64>
    }
 
-   // func.func @conv_1d_sparse_dense(%arg0: tensor<?xf64, #INPUT>, %arg1: tensor<?xf64>, %arg2: tensor<?xf64>) -> tensor<?xf64> {
-   //   %ret = linalg.conv_1d ins (%arg0, %arg1: tensor<?xf64, #INPUT>, tensor<?xf64>)
-   //                         outs (%arg2: tensor<?xf64>) -> tensor<?xf64>
-   //   return %ret : tensor<?xf64>
-   // }
-
   func.func @conv_1d_dense_dense(%arg0: tensor<?xf64>, %arg1: tensor<?xf64>, %arg2: tensor<?xf64>) -> tensor<?xf64> {
-    %ret = linalg.conv_1d ins (%arg0, %arg1: tensor<?xf64>, tensor<?xf64>)
-                          outs (%arg2: tensor<?xf64>) -> tensor<?xf64>
-    return %ret : tensor<?xf64>
+     %0 = linalg.generic #SCHEDULE
+          ins(%arg0, %arg1 : tensor<?xf64>, tensor<?xf64>) outs(%arg2 : tensor<?xf64>) attrs =  {sorted = true} {
+     ^bb0(%in: f64, %in_0: f64, %out: f64):
+       %1 = arith.mulf %in, %in_0 : f64
+       %2 = arith.addf %out, %1 : f64
+       linalg.yield %2 : f64
+     } -> tensor<?xf64>
+    return %0 : tensor<?xf64>
   }
 
   func.func @runBenchmark(%IL : index, %FL: index) {
@@ -83,6 +101,7 @@ module {
     %f0 = arith.constant 0.0 : f64
     %f5 = arith.constant 5.0 : f64
     %c100 = arith.constant 100 : index
+    %c101 = arith.constant 101 : index
     %tmp = arith.subi %IL, %FL : index
     %OL = arith.addi %tmp, %c1 : index
 
@@ -94,13 +113,14 @@ module {
 
 
     // Run sparse conv
-    scf.for %input_sparsity = %c0 to %c100 step %c1 {
+    scf.for %input_sparsity = %c0 to %c101 step %c1 {
       // Construct input.
       %dense_input = func.call @get_sparse_1d_tensor(%IL, %input_sparsity, %g) :(index, index, !Generator) -> (tensor<?xf64>)
       %sparse_input = sparse_tensor.convert %dense_input: tensor<?xf64> to tensor<?xf64, #INPUT>
 
+      %repeat = arith.constant REPEAT : index
       // Run sparse conv
-      %dense_time, %sparse_time = scf.for %iv = %c0 to %c5 step %c1
+      %dense_time, %sparse_time = scf.for %iv = %c0 to %repeat step %c1
         iter_args(%dense_sum = %f0, %sparse_sum = %f0) -> (f64, f64) {
         %dense_output = func.call @alloc_1d_filled_f64(%OL, %output_elem) :(index, f64) -> (tensor<?xf64>)
         %dense_start = func.call @rtclock() : () -> f64
