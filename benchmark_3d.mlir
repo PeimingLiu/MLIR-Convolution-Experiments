@@ -51,8 +51,8 @@
 #prpprr = {
   indexing_maps = [
     affine_map<(d0, d1, d2, d3, d4, d5) -> (d0 + d1, d2 + d4, d3 + d5)>,
-    affine_map<(d0, d1, d2, d3, d4, d5) -> (d1, d2, d3)>,
-    affine_map<(d0, d1, d2, d3, d4, d5) -> (d0, d4, d5)>
+    affine_map<(d0, d1, d2, d3, d4, d5) -> (d1, d4, d5)>,
+    affine_map<(d0, d1, d2, d3, d4, d5) -> (d0, d2, d3)>
   ],
   iterator_types = ["parallel", "reduction", "parallel", "parallel", "reduction", "reduction"]
 }
