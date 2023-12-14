@@ -292,7 +292,7 @@ module {
       %dense_average_time_ms = arith.mulf %dense_average_time, %f1000 : f64
       %CCC_average_time_ms = arith.mulf %CCC_average_time, %f1000 : f64
       %DCC_average_time_ms = arith.mulf %DCC_average_time, %f1000 : f64
-      %DDC_average_time_ms = arith.divf %DDC_time_res, %frep : f64
+      %DDC_average_time_ms = arith.mulf %DDC_average_time, %f1000 : f64
 
       vector.print %dense_average_time_ms : f64
       vector.print %CCC_average_time_ms : f64
