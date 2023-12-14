@@ -268,19 +268,36 @@ module {
 
       %dense_time_exc = arith.addf %dense_time_max, %dense_time_min : f64
       %dense_time_res = arith.subf %dense_time_sum, %dense_time_exc : f64
-      vector.print %dense_time_res : f64
 
       %CCC_time_exc = arith.addf %CCC_time_max, %CCC_time_min : f64
       %CCC_time_res = arith.subf %CCC_time_sum, %CCC_time_exc : f64
-      vector.print %CCC_time_res : f64
 
       %DCC_time_exc = arith.addf %DCC_time_max, %DCC_time_min : f64
       %DCC_time_res = arith.subf %DCC_time_sum, %DCC_time_exc : f64
-      vector.print %DCC_time_res : f64
 
       %DDC_time_exc = arith.addf %DDC_time_max, %DDC_time_min : f64
       %DDC_time_res = arith.subf %DDC_time_sum, %DDC_time_exc : f64
-      vector.print %DDC_time_res : f64
+
+
+      %rep = arith.subi %repeat, %c2 : index
+      %irep = arith.index_castui %rep : index to i64
+      %frep = arith.uitofp %irep : i64 to f64
+      %f1000 = arith.constant 1000.0 : f64
+
+      %dense_average_time = arith.divf %dense_time_res, %frep : f64
+      %CCC_average_time = arith.divf %CCC_time_res, %frep : f64
+      %DCC_average_time = arith.divf %DCC_time_res, %frep : f64
+      %DDC_average_time = arith.divf %DDC_time_res, %frep : f64
+
+      %dense_average_time_ms = arith.mulf %dense_average_time, %f1000 : f64
+      %CCC_average_time_ms = arith.mulf %CCC_average_time, %f1000 : f64
+      %DCC_average_time_ms = arith.mulf %DCC_average_time, %f1000 : f64
+      %DDC_average_time_ms = arith.divf %DDC_time_res, %frep : f64
+
+      vector.print %dense_average_time_ms : f64
+      vector.print %CCC_average_time_ms : f64
+      vector.print %DCC_average_time_ms : f64
+      vector.print %DDC_average_time_ms : f64
     }
 
     func.call @rtdrand(%g) : (!Generator) ->()

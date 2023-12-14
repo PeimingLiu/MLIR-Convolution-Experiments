@@ -1,6 +1,6 @@
 MLIR_PATH=/usr/local/google/home/peiming/projects/llvm-project/build-static
-INPUT_WIDTH=20
-INPUT_HEIGHT=20
+INPUT_WIDTH=999
+INPUT_HEIGHT=999
 REPEAT=10
 
 ORDERS=(prpr prrp pprr rrpp)

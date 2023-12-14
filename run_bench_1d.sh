@@ -1,6 +1,6 @@
 MLIR_PATH=/usr/local/google/home/peiming/projects/llvm-project/build-static
 INPUT_WIDTH=999999
-REPEAT=5
+REPEAT=10
 
 ORDERS=(pr rp)
 for ORD in ${ORDERS[*]};

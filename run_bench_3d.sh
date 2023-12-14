@@ -1,7 +1,7 @@
 MLIR_PATH=/usr/local/google/home/peiming/projects/llvm-project/build-static
-INPUT_WIDTH=5
-INPUT_HEIGHT=5
-INPUT_DEPTH=5
+INPUT_WIDTH=99
+INPUT_HEIGHT=99
+INPUT_DEPTH=99
 REPEAT=3  # At least three
 
 ORDERS=(ppprrr prprrp rrrppp prprpr prpprr prrprp)

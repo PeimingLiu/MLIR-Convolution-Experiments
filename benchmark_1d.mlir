@@ -148,12 +148,19 @@ module {
       bufferization.dealloc_tensor %dense_input : tensor<?xf64>
       bufferization.dealloc_tensor %sparse_input : tensor<?xf64, #INPUT>
 
-      %dense_average_time = arith.divf %dense_time, %f5 : f64
-      %sparse_average_time = arith.divf %sparse_time, %f5 : f64
+      %irep = arith.index_castui %repeat : index to i64
+      %frep = arith.uitofp %irep : i64 to f64
+      %f1000 = arith.constant 1000.0 : f64
+
+      %dense_average_time = arith.divf %dense_time, %frep : f64
+      %sparse_average_time = arith.divf %sparse_time, %frep : f64
+
+      %dense_average_time_ms = arith.mulf %dense_average_time, %f1000 : f64
+      %sparse_average_time_ms = arith.mulf %sparse_average_time, %f1000 : f64
 
       vector.print %input_sparsity : index
-      vector.print %dense_average_time : f64
-      vector.print %sparse_average_time : f64
+      vector.print %dense_average_time_ms : f64
+      vector.print %sparse_average_time_ms : f64
 
     }
     return

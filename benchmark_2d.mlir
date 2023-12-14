@@ -133,7 +133,7 @@ module {
     // Compute output shape
     %c0 = arith.constant 0 : index
     %c1 = arith.constant 1 : index
-    %c2 = arith.constant 1 : index
+    %c2 = arith.constant 2 : index
     %c5 = arith.constant 5 : index
     %c49 = arith.constant 49 : index
     %c50 = arith.constant 50 : index
@@ -224,15 +224,29 @@ module {
 
       %dense_time_exc = arith.addf %dense_time_max, %dense_time_min : f64
       %dense_time_res = arith.subf %dense_time_sum, %dense_time_exc : f64
-      vector.print %dense_time_res : f64
 
       %CC_time_exc = arith.addf %CC_time_max, %CC_time_min : f64
       %CC_time_res = arith.subf %CC_time_sum, %CC_time_exc : f64
-      vector.print %CC_time_res : f64
 
       %DC_time_exc = arith.addf %DC_time_max, %DC_time_min : f64
       %DC_time_res = arith.subf %DC_time_sum, %DC_time_exc : f64
-      vector.print %DC_time_res : f64
+
+      %rep = arith.subi %repeat, %c2 : index
+      %irep = arith.index_castui %rep : index to i64
+      %frep = arith.uitofp %irep : i64 to f64
+      %f1000 = arith.constant 1000.0 : f64
+
+      %dense_average_time = arith.divf %dense_time_res, %frep : f64
+      %CC_average_time = arith.divf %CC_time_res, %frep : f64
+      %DC_average_time = arith.divf %DC_time_res, %frep : f64
+
+      %dense_average_time_ms = arith.mulf %dense_average_time, %f1000 : f64
+      %CC_average_time_ms = arith.mulf %CC_average_time, %f1000 : f64
+      %DC_average_time_ms = arith.mulf %DC_average_time, %f1000 : f64
+
+      vector.print %dense_average_time_ms : f64
+      vector.print %CC_average_time_ms : f64
+      vector.print %DC_average_time_ms : f64
     }
 
     func.call @rtdrand(%g) : (!Generator) ->()
