@@ -210,13 +210,13 @@ module {
       bufferization.dealloc_tensor %DC_input : tensor<?x?xf64, #DC>
       vector.print %input_sparsity : index // also the sparsity level
 
-      %dense_time_min = vector.reduction <minf>, %dense_time : vector<REPEATxf64> into f64
-      %CC_time_min = vector.reduction <minf>, %CC_time : vector<REPEATxf64> into f64
-      %DC_time_min = vector.reduction <minf>, %DC_time : vector<REPEATxf64> into f64
+      %dense_time_min = vector.reduction <minnumf>, %dense_time : vector<REPEATxf64> into f64
+      %CC_time_min = vector.reduction <minnumf>, %CC_time : vector<REPEATxf64> into f64
+      %DC_time_min = vector.reduction <minnumf>, %DC_time : vector<REPEATxf64> into f64
 
-      %dense_time_max = vector.reduction <maxf>, %dense_time : vector<REPEATxf64> into f64
-      %CC_time_max = vector.reduction <maxf>, %CC_time : vector<REPEATxf64> into f64
-      %DC_time_max = vector.reduction <maxf>, %DC_time : vector<REPEATxf64> into f64
+      %dense_time_max = vector.reduction <maxnumf>, %dense_time : vector<REPEATxf64> into f64
+      %CC_time_max = vector.reduction <maxnumf>, %CC_time : vector<REPEATxf64> into f64
+      %DC_time_max = vector.reduction <maxnumf>, %DC_time : vector<REPEATxf64> into f64
 
       %dense_time_sum = vector.reduction <add>, %dense_time, %f0 : vector<REPEATxf64> into f64
       %CC_time_sum = vector.reduction <add>, %CC_time, %f0 : vector<REPEATxf64> into f64
