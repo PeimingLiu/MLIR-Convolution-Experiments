@@ -98,35 +98,35 @@ module {
     return %tnsr : tensor<?x?x?x?xf32>
   }
 
-  func.func @conv_2d_dual_sparse(%arg0: tensor<?x?x?x?xf32, #SSSS>, %arg1: tensor<?x?x?x?xf32, #SSSS>, %arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32> {
+  func.func @conv_2d_dual_sparse(%arg0: tensor<?x?x?x?xf32, #DDDS>, %arg1: tensor<?x?x?x?xf32, #DDDS>, %arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32> {
     %ret = linalg.conv_2d_nhwc_hwcf {dilations = dense<1> : tensor<2xi64>,
                                       strides = dense<1> : tensor<2xi64>}
-      ins (%arg0, %arg1: tensor<?x?x?x?xf32, #SSSS>, tensor<?x?x?x?xf32, #SSSS>)
+      ins (%arg0, %arg1: tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32, #DDDS>)
       outs (%arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32>
     return %ret : tensor<?x?x?x?xf32>
   }
 
-  func.func @conv_2d_filter_sparse(%arg0: tensor<?x?x?x?xf32>, %arg1: tensor<?x?x?x?xf32, #SSSS>, %arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32> {
+  func.func @conv_2d_filter_sparse(%arg0: tensor<?x?x?x?xf32>, %arg1: tensor<?x?x?x?xf32, #DDDS>, %arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32> {
     %ret = linalg.conv_2d_nhwc_hwcf {dilations = dense<1> : tensor<2xi64>,
                                       strides = dense<1> : tensor<2xi64>}
-      ins (%arg0, %arg1: tensor<?x?x?x?xf32>, tensor<?x?x?x?xf32, #SSSS>)
+      ins (%arg0, %arg1: tensor<?x?x?x?xf32>, tensor<?x?x?x?xf32, #DDDS>)
       outs (%arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32>
     return %ret : tensor<?x?x?x?xf32>
   }
 
-  func.func @conv_input_sparse(%arg0: tensor<?x?x?x?xf32, #SSSS>, %arg1: tensor<?x?x?x?xf32>, %arg2: tensor<?x?x?x?xf32>, %str : index) -> tensor<?x?x?x?xf32> {
+  func.func @conv_input_sparse(%arg0: tensor<?x?x?x?xf32, #DDDS>, %arg1: tensor<?x?x?x?xf32>, %arg2: tensor<?x?x?x?xf32>, %str : index) -> tensor<?x?x?x?xf32> {
     %c1 = arith.constant 1 : index
     %is_one = arith.cmpi eq, %str, %c1 : index
     %ret = scf.if %is_one -> tensor<?x?x?x?xf32> {
       %result = linalg.conv_2d_nhwc_hwcf {dilations = dense<1> : tensor<2xi64>,
-                                        strides = dense<1> : tensor<2xi64>}
-      ins (%arg0, %arg1: tensor<?x?x?x?xf32, #SSSS>, tensor<?x?x?x?xf32>)
+                                          strides = dense<1> : tensor<2xi64>}
+      ins (%arg0, %arg1: tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32>)
       outs (%arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32>
       scf.yield %result : tensor<?x?x?x?xf32>
     } else {
       %result = linalg.conv_2d_nhwc_hwcf {dilations = dense<1> : tensor<2xi64>,
-                                        strides = dense<2> : tensor<2xi64>}
-      ins (%arg0, %arg1: tensor<?x?x?x?xf32, #SSSS>, tensor<?x?x?x?xf32>)
+                                          strides = dense<2> : tensor<2xi64>}
+      ins (%arg0, %arg1: tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32>)
       outs (%arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32>
       scf.yield %result : tensor<?x?x?x?xf32>
     }
@@ -153,13 +153,14 @@ module {
     return %ret : tensor<?x?x?x?xf32>
   }
 
-  func.func @runBenchmark(%benchmark : index, %N : index, %H : index, %W : index, %R : index, %S : index,
-  %STR : index, %PAD : index, %C : index, %M : index) {
+  func.func @runBenchmark(
+  %benchmark : index, %N : index, %H : index, %W : index,
+  %R : index, %S : index, %STR : index, %PAD : index, %C : index, %M : index) {
     // vector.print %benchmark : index
     // Compute output shape
     %c1 = arith.constant 1 : index
     %c2 = arith.constant 2 : index
-    %Pad2 = arith.muli %PAD, %c2 : index
+    %Pad2 = arith.constant 0 : index
     %HPad = arith.addi %H, %Pad2 : index
     %WPad = arith.addi %W, %Pad2 : index
     %HPadMinusR = arith.subi %HPad, %R : index
@@ -175,7 +176,7 @@ module {
     %dense_filter = sparse_tensor.convert %filter : tensor<?x?xf32, #DD> to tensor<?x?xf32>
     %filter_shape = tensor.from_elements %R, %S, %C, %M : tensor<4xindex>
     %reshaped_filter = tensor.reshape %dense_filter(%filter_shape) : (tensor<?x?xf32>, tensor<4xindex>) -> tensor<?x?x?x?xf32>
-    %sparse_filter = sparse_tensor.convert %reshaped_filter: tensor<?x?x?x?xf32> to tensor<?x?x?x?xf32, #SSSS>
+    %sparse_filter = sparse_tensor.convert %reshaped_filter: tensor<?x?x?x?xf32> to tensor<?x?x?x?xf32, #DDDS>
 
     // %filter_vals = sparse_tensor.values %sparseFilter : tensor<?x?x?x?xf32, #DDDS> to memref<?xf32>
     // call @dump(%filter_vals) : (memref<?xf32>) -> ()
@@ -183,7 +184,7 @@ module {
     // Construct input.
     %input_sparsity = arith.constant 0 : index
     %input = call @get_sparse_4d_tensor(%N, %H, %W, %C, %input_sparsity) :(index, index, index, index, index) -> (tensor<?x?x?x?xf32>)
-    %sparse_input = sparse_tensor.convert %input: tensor<?x?x?x?xf32> to tensor<?x?x?x?xf32, #SSSS>
+    %sparse_input = sparse_tensor.convert %input: tensor<?x?x?x?xf32> to tensor<?x?x?x?xf32, #DDDS>
 
     // Construct output.
     %output_elem = arith.constant 0.0 : f32
@@ -191,7 +192,7 @@ module {
 
     // Run sparse conv
     %start = func.call @rtclock() : () -> f64
-    %ret = func.call @conv_input_sparse(%sparse_input, %reshaped_filter, %output, %STR) : (tensor<?x?x?x?xf32, #SSSS>, tensor<?x?x?x?xf32>, tensor<?x?x?x?xf32>, index) -> (tensor<?x?x?x?xf32>)
+    %ret = func.call @conv_input_sparse(%sparse_input, %reshaped_filter, %output, %STR) : (tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32>, tensor<?x?x?x?xf32>, index) -> (tensor<?x?x?x?xf32>)
     %end = func.call @rtclock() : () -> f64
     %time = arith.subf %end, %start : f64
     vector.print %time : f64
@@ -199,9 +200,9 @@ module {
     bufferization.dealloc_tensor %filter: tensor<?x?xf32, #DD>
     bufferization.dealloc_tensor %filter_shape : tensor<4xindex>
     bufferization.dealloc_tensor %reshaped_filter: tensor<?x?x?x?xf32>
-    bufferization.dealloc_tensor %sparse_filter: tensor<?x?x?x?xf32, #SSSS>
+    bufferization.dealloc_tensor %sparse_filter: tensor<?x?x?x?xf32, #DDDS>
     bufferization.dealloc_tensor %input: tensor<?x?x?x?xf32>
-    bufferization.dealloc_tensor %sparse_input: tensor<?x?x?x?xf32, #SSSS>
+    bufferization.dealloc_tensor %sparse_input: tensor<?x?x?x?xf32, #DDDS>
     bufferization.dealloc_tensor %output : tensor<?x?x?x?xf32>
     return
   }
