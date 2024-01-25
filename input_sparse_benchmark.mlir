@@ -39,7 +39,7 @@
 }>
 
 #DDDS = #sparse_tensor.encoding<{
-  map = (d0, d1, d2, d3) -> (d0 : dense, d1 : dense, d2 : dense, d3 : compressed)
+  map = (d0, d1, d2, d3) -> (d0 : dense, d1 : dense, d2 : compressed, d3 : compressed)
 }>
 
 #SSSS = #sparse_tensor.encoding<{
@@ -98,11 +98,22 @@ module {
     return %tnsr : tensor<?x?x?x?xf32>
   }
 
-  func.func @conv_2d_dual_sparse(%arg0: tensor<?x?x?x?xf32, #DDDS>, %arg1: tensor<?x?x?x?xf32, #DDDS>, %arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32> {
-    %ret = linalg.conv_2d_nhwc_hwcf {dilations = dense<1> : tensor<2xi64>,
-                                      strides = dense<1> : tensor<2xi64>}
+  func.func @conv_2d_dual_sparse(%arg0: tensor<?x?x?x?xf32, #DDDS>, %arg1: tensor<?x?x?x?xf32, #DDDS>, %arg2: tensor<?x?x?x?xf32>, %str : index) -> tensor<?x?x?x?xf32> {
+    %c1 = arith.constant 1 : index
+    %is_one = arith.cmpi eq, %str, %c1 : index
+    %ret = scf.if %is_one -> tensor<?x?x?x?xf32> {
+      %result = linalg.conv_2d_nhwc_hwcf {dilations = dense<1> : tensor<2xi64>,
+                                          strides = dense<1> : tensor<2xi64>}
       ins (%arg0, %arg1: tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32, #DDDS>)
       outs (%arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32>
+      scf.yield %result : tensor<?x?x?x?xf32>
+    } else {
+      %result = linalg.conv_2d_nhwc_hwcf {dilations = dense<1> : tensor<2xi64>,
+                                          strides = dense<2> : tensor<2xi64>}
+      ins (%arg0, %arg1: tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32, #DDDS>)
+      outs (%arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32>
+      scf.yield %result : tensor<?x?x?x?xf32>
+    }
     return %ret : tensor<?x?x?x?xf32>
   }
 
@@ -153,7 +164,7 @@ module {
     return %ret : tensor<?x?x?x?xf32>
   }
 
-  func.func @runBenchmark(
+ func.func @runBenchmark(
   %benchmark : index, %N : index, %H : index, %W : index,
   %R : index, %S : index, %STR : index, %PAD : index, %C : index, %M : index) {
     // vector.print %benchmark : index
@@ -190,9 +201,12 @@ module {
     %output_elem = arith.constant 0.0 : f32
     %output = call @alloc_4d_filled_f32(%N, %P, %Q, %M, %output_elem) :(index, index, index, index, f32) -> (tensor<?x?x?x?xf32>)
 
+    // Warmup
+    %tmp = func.call @conv_2d_dual_sparse(%sparse_input, %sparse_filter, %output, %STR) : (tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32>, index) -> (tensor<?x?x?x?xf32>)
+
     // Run sparse conv
     %start = func.call @rtclock() : () -> f64
-    %ret = func.call @conv_input_sparse(%sparse_input, %reshaped_filter, %output, %STR) : (tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32>, tensor<?x?x?x?xf32>, index) -> (tensor<?x?x?x?xf32>)
+    %ret = func.call @conv_2d_dual_sparse(%sparse_input, %sparse_filter, %output, %STR) : (tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32>, index) -> (tensor<?x?x?x?xf32>)
     %end = func.call @rtclock() : () -> f64
     %time = arith.subf %end, %start : f64
     vector.print %time : f64

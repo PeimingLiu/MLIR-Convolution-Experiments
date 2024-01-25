@@ -1,4 +1,4 @@
-MLIR_PATH=/usr/local/google/home/peiming/projects/llvm-project/build-static
+MLIR_PATH=/usr/local/google/home/peiming/projects/llvm-project/build-clang-asan
 
 export TENSOR0="./ResNet50/0.8/tns/bottleneck_projection_block_group_projection_block_group1.smtx.tns" \
        TENSOR1="./ResNet50/0.8/tns/bottleneck_1_block_group_projection_block_group1.smtx.tns" \
@@ -26,5 +26,5 @@ export TENSOR0="./ResNet50/0.8/tns/bottleneck_projection_block_group_projection_
        TENSOR23="./ResNet50/0.8/tns/bottleneck_2_block_group4_1_1.smtx.tns" \
        TENSOR24="./ResNet50/0.8/tns/bottleneck_3_block_group4_1_1.smtx.tns"
 
-$MLIR_PATH/bin/mlir-opt --sparsifier="parallelization-strategy=any-storage-any-loop" ./input_sparse_benchmark.mlir | mlir-cpu-runner -O0 -e entry -entry-point-result=void -shared-libs=$MLIR_PATH/lib/libmlir_c_runner_utils.so,$MLIR_PATH/lib/libmlir_runner_utils.so,$MLIR_PATH/lib/libmlir_async_runtime.so
-#$MLIR_PATH/bin/mlir-opt --sparsifier="parallelization-strategy=none" ./input_sparse_benchmark.mlir | mlir-cpu-runner -O0 -e entry -entry-point-result=void -shared-libs=$MLIR_PATH/lib/libmlir_c_runner_utils.so,$MLIR_PATH/lib/libmlir_runner_utils.so,$MLIR_PATH/lib/libmlir_async_runtime.so
+#$MLIR_PATH/bin/mlir-opt --sparsifier="parallelization-strategy=any-storage-any-loop" ./input_sparse_benchmark.mlir | mlir-cpu-runner -O0 -e entry -entry-point-result=void -shared-libs=$MLIR_PATH/lib/libmlir_c_runner_utils.so,$MLIR_PATH/lib/libmlir_runner_utils.so,$MLIR_PATH/lib/libmlir_async_runtime.so
+$MLIR_PATH/bin/mlir-opt --sparsifier="parallelization-strategy=none" ./input_sparse_benchmark.mlir | $MLIR_PATH/bin/mlir-cpu-runner -O0 -e entry -entry-point-result=void -shared-libs=$MLIR_PATH/lib/libmlir_c_runner_utils.so,$MLIR_PATH/lib/libmlir_runner_utils.so
