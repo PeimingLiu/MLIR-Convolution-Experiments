@@ -10,6 +10,10 @@
   map = (d0, d1) -> (d0 : dense, d1 : dense)
 }>
 
+#COO = #sparse_tensor.encoding<{
+  map = (d0, d1, d2, d3) -> (d0 : compressed(nonunique), d1 : singleton(nonunique), d2 : singleton(nonunique), d3 : singleton)
+}>
+
 #DDDS = #sparse_tensor.encoding<{
   map = (d0, d1, d2, d3) -> (d0 : dense, d1 : dense, d2 : dense, d3 : compressed)
 }>
@@ -144,7 +148,7 @@ module {
     %c112 = arith.constant 112 : index
     %c256 = arith.constant 256 : index
 
-    call @runBenchmark(%c0, %c1, %c112, %c112, %c1, %c1, %c2, %c0, %c64, %c256) :
+    call @runBenchmark(%c0, %c1, %c256, %c256, %c1, %c1, %c2, %c0, %c64, %c256) :
       (index, index, index, index, index, index, index, index , index, index) -> ()
     return
   }
