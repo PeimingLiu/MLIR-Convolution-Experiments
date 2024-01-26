@@ -1,4 +1,4 @@
-MLIR_PATH=/usr/local/google/home/peiming/projects/llvm-project/build-clang-asan
+MLIR_PATH=/usr/local/google/home/peiming/projects/llvm-project/build-static
 
 export TENSOR0="./ResNet50/0.8/tns/bottleneck_projection_block_group_projection_block_group1.smtx.tns" \
        TENSOR1="./ResNet50/0.8/tns/bottleneck_1_block_group_projection_block_group1.smtx.tns" \
