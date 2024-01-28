@@ -39,7 +39,7 @@
 }>
 
 #DDDS = #sparse_tensor.encoding<{
-  map = (d0, d1, d2, d3) -> (d0 : dense, d1 : dense, d2 : compressed, d3 : compressed)
+  map = (d0, d1, d2, d3) -> (d0 : dense, d1 : dense, d2 : dense, d3 : compressed)
 }>
 
 #SSSS = #sparse_tensor.encoding<{
@@ -68,8 +68,14 @@ module {
     return %ret : tensor<?x?x?x?xf32>
   }
 
-  func.func @get_sparse_4d_tensor(%s1 : index, %s2 : index, %s3 : index, %s4 : index, %sparsity : index) -> tensor<?x?x?x?xf32> {
-    %tnsr = tensor.generate %s1, %s2, %s3, %s4 {
+  func.func @get_fill_val() -> f32 {
+    %f0 = arith.constant 0.0 : f32
+    return %f0 : f32
+  }
+
+
+  func.func @get_sparse_4d_tensor(%sparsity : index) -> tensor<N_VALxH_VALxW_VALxC_VALxf32> {
+    %tnsr = tensor.generate {
     ^bb0(%i : index, %j : index, %k : index, %l : index):
       %prime1 = arith.constant 73856093 : index
       %prime2 = arith.constant 19349663 : index
@@ -94,81 +100,24 @@ module {
         scf.yield %f0 : f32
       }
       tensor.yield %insert : f32
-    } : tensor<?x?x?x?xf32>
-    return %tnsr : tensor<?x?x?x?xf32>
+    } : tensor<N_VALxH_VALxW_VALxC_VALxf32>
+    return %tnsr : tensor<N_VALxH_VALxW_VALxC_VALxf32>
   }
 
-  func.func @conv_2d_dual_sparse(%arg0: tensor<?x?x?x?xf32, #DDDS>, %arg1: tensor<?x?x?x?xf32, #DDDS>, %arg2: tensor<?x?x?x?xf32>, %str : index) -> tensor<?x?x?x?xf32> {
-    %c1 = arith.constant 1 : index
-    %is_one = arith.cmpi eq, %str, %c1 : index
-    %ret = scf.if %is_one -> tensor<?x?x?x?xf32> {
-      %result = linalg.conv_2d_nhwc_hwcf {dilations = dense<1> : tensor<2xi64>,
-                                          strides = dense<1> : tensor<2xi64>}
-      ins (%arg0, %arg1: tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32, #DDDS>)
-      outs (%arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32>
-      scf.yield %result : tensor<?x?x?x?xf32>
-    } else {
-      %result = linalg.conv_2d_nhwc_hwcf {dilations = dense<1> : tensor<2xi64>,
-                                          strides = dense<2> : tensor<2xi64>}
-      ins (%arg0, %arg1: tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32, #DDDS>)
-      outs (%arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32>
-      scf.yield %result : tensor<?x?x?x?xf32>
-    }
-    return %ret : tensor<?x?x?x?xf32>
-  }
+ func.func @runBenchmark() {
+    // %benchmark = arith.constant benchmark_VAL: index
+    %N = arith.constant N_VAL: index
+    %H = arith.constant H_VAL: index
+    %W = arith.constant W_VAL: index
+    %R = arith.constant R_VAL: index
+    %S = arith.constant S_VAL: index
+    %C = arith.constant C_VAL: index
+    %M = arith.constant M_VAL: index
+    %STR = arith.constant STRIDE : index
 
-  func.func @conv_2d_filter_sparse(%arg0: tensor<?x?x?x?xf32>, %arg1: tensor<?x?x?x?xf32, #DDDS>, %arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32> {
-    %ret = linalg.conv_2d_nhwc_hwcf {dilations = dense<1> : tensor<2xi64>,
-                                      strides = dense<1> : tensor<2xi64>}
-      ins (%arg0, %arg1: tensor<?x?x?x?xf32>, tensor<?x?x?x?xf32, #DDDS>)
-      outs (%arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32>
-    return %ret : tensor<?x?x?x?xf32>
-  }
-
-  func.func @conv_input_sparse(%arg0: tensor<?x?x?x?xf32, #DDDS>, %arg1: tensor<?x?x?x?xf32>, %arg2: tensor<?x?x?x?xf32>, %str : index) -> tensor<?x?x?x?xf32> {
-    %c1 = arith.constant 1 : index
-    %is_one = arith.cmpi eq, %str, %c1 : index
-    %ret = scf.if %is_one -> tensor<?x?x?x?xf32> {
-      %result = linalg.conv_2d_nhwc_hwcf {dilations = dense<1> : tensor<2xi64>,
-                                          strides = dense<1> : tensor<2xi64>}
-      ins (%arg0, %arg1: tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32>)
-      outs (%arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32>
-      scf.yield %result : tensor<?x?x?x?xf32>
-    } else {
-      %result = linalg.conv_2d_nhwc_hwcf {dilations = dense<1> : tensor<2xi64>,
-                                          strides = dense<2> : tensor<2xi64>}
-      ins (%arg0, %arg1: tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32>)
-      outs (%arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32>
-      scf.yield %result : tensor<?x?x?x?xf32>
-    }
-    return %ret : tensor<?x?x?x?xf32>
-  }
-
-  func.func @conv_dense(%arg0: tensor<?x?x?x?xf32>, %arg1: tensor<?x?x?x?xf32>, %arg2: tensor<?x?x?x?xf32>, %str : index) -> tensor<?x?x?x?xf32> {
-    %c1 = arith.constant 1 : index
-    %is_one = arith.cmpi eq, %str, %c1 : index
-
-    %ret = scf.if %is_one -> tensor<?x?x?x?xf32> {
-      %result = linalg.conv_2d_nhwc_hwcf {dilations = dense<1> : tensor<2xi64>,
-                                        strides = dense<1> : tensor<2xi64>}
-      ins (%arg0, %arg1: tensor<?x?x?x?xf32>, tensor<?x?x?x?xf32>)
-      outs (%arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32>
-      scf.yield %result : tensor<?x?x?x?xf32>
-    } else {
-      %result = linalg.conv_2d_nhwc_hwcf {dilations = dense<1> : tensor<2xi64>,
-                                        strides = dense<2> : tensor<2xi64>}
-      ins (%arg0, %arg1: tensor<?x?x?x?xf32>, tensor<?x?x?x?xf32>)
-      outs (%arg2: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32>
-      scf.yield %result : tensor<?x?x?x?xf32>
-    }
-    return %ret : tensor<?x?x?x?xf32>
-  }
-
- func.func @runBenchmark(
-  %benchmark : index, %N : index, %H : index, %W : index,
-  %R : index, %S : index, %STR : index, %PAD : index, %C : index, %M : index) {
     // vector.print %benchmark : index
     // Compute output shape
+    %ben = arith.constant BEN : index
     %c1 = arith.constant 1 : index
     %c2 = arith.constant 2 : index
     %Pad2 = arith.constant 0 : index
@@ -182,42 +131,43 @@ module {
     %Q = arith.addi %WPadMinusSDivStr, %c1: index
 
     // Construct filter of size RxSxCxM.
-    %file_name = call @getTensorFilename(%benchmark) : (index) -> (!Filename)
+    %file_name = call @getTensorFilename(%ben) : (index) -> (!Filename)
     %filter = sparse_tensor.new %file_name : !Filename to tensor<?x?xf32, #DD>
     %dense_filter = sparse_tensor.convert %filter : tensor<?x?xf32, #DD> to tensor<?x?xf32>
     %filter_shape = tensor.from_elements %R, %S, %C, %M : tensor<4xindex>
-    %reshaped_filter = tensor.reshape %dense_filter(%filter_shape) : (tensor<?x?xf32>, tensor<4xindex>) -> tensor<?x?x?x?xf32>
-    %sparse_filter = sparse_tensor.convert %reshaped_filter: tensor<?x?x?x?xf32> to tensor<?x?x?x?xf32, #DDDS>
+    %reshaped_filter = tensor.reshape %dense_filter(%filter_shape) : (tensor<?x?xf32>, tensor<4xindex>) -> tensor<R_VALxS_VALxC_VALxM_VALxf32>
+    %f0 = call  @get_fill_val() : () -> f32
 
-    // %filter_vals = sparse_tensor.values %sparseFilter : tensor<?x?x?x?xf32, #DDDS> to memref<?xf32>
-    // call @dump(%filter_vals) : (memref<?xf32>) -> ()
-
-    // Construct input.
-    %input_sparsity = arith.constant 0 : index
-    %input = call @get_sparse_4d_tensor(%N, %H, %W, %C, %input_sparsity) :(index, index, index, index, index) -> (tensor<?x?x?x?xf32>)
-    %sparse_input = sparse_tensor.convert %input: tensor<?x?x?x?xf32> to tensor<?x?x?x?xf32, #DDDS>
 
     // Construct output.
     %output_elem = arith.constant 0.0 : f32
-    %output = call @alloc_4d_filled_f32(%N, %P, %Q, %M, %output_elem) :(index, index, index, index, f32) -> (tensor<?x?x?x?xf32>)
+    %output_buff = tensor.empty(%N, %P, %Q, %M) : tensor<?x?x?x?xf32>
+    %output = linalg.fill ins(%f0 : f32) outs(%output_buff : tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32>
 
-    // Warmup
-    %tmp = func.call @conv_2d_dual_sparse(%sparse_input, %sparse_filter, %output, %STR) : (tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32>, index) -> (tensor<?x?x?x?xf32>)
+    // Construct input.
+    %input_sparsity = arith.constant 80 : index
+    %input = call @get_sparse_4d_tensor(%input_sparsity) :(index) -> (tensor<N_VALxH_VALxW_VALxC_VALxf32>)
+    %sparse_input = sparse_tensor.convert %input: tensor<N_VALxH_VALxW_VALxC_VALxf32> to tensor<N_VALxH_VALxW_VALxC_VALxf32, #DDDS>
+
+    // Warm up first.
+    %tmp = linalg.conv_2d_nhwc_hwcf {dilations = dense<1> : tensor<2xi64>,
+                                     strides = dense<STRIDE> : tensor<2xi64>}
+      ins (%sparse_input, %reshaped_filter : tensor<N_VALxH_VALxW_VALxC_VALxf32, #DDDS>, tensor<R_VALxS_VALxC_VALxM_VALxf32>)
+      outs (%output: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32>
 
     // Run sparse conv
     %start = func.call @rtclock() : () -> f64
-    %ret = func.call @conv_2d_dual_sparse(%sparse_input, %sparse_filter, %output, %STR) : (tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32, #DDDS>, tensor<?x?x?x?xf32>, index) -> (tensor<?x?x?x?xf32>)
+    %ret = linalg.conv_2d_nhwc_hwcf {dilations = dense<1> : tensor<2xi64>,
+                                     strides = dense<STRIDE> : tensor<2xi64>}
+      ins (%sparse_input, %reshaped_filter : tensor<N_VALxH_VALxW_VALxC_VALxf32, #DDDS>, tensor<R_VALxS_VALxC_VALxM_VALxf32>)
+      outs (%output: tensor<?x?x?x?xf32>) -> tensor<?x?x?x?xf32>
     %end = func.call @rtclock() : () -> f64
     %time = arith.subf %end, %start : f64
     vector.print %time : f64
 
-    bufferization.dealloc_tensor %filter: tensor<?x?xf32, #DD>
-    bufferization.dealloc_tensor %filter_shape : tensor<4xindex>
-    bufferization.dealloc_tensor %reshaped_filter: tensor<?x?x?x?xf32>
-    bufferization.dealloc_tensor %sparse_filter: tensor<?x?x?x?xf32, #DDDS>
-    bufferization.dealloc_tensor %input: tensor<?x?x?x?xf32>
-    bufferization.dealloc_tensor %sparse_input: tensor<?x?x?x?xf32, #DDDS>
-    bufferization.dealloc_tensor %output : tensor<?x?x?x?xf32>
+    bufferization.dealloc_tensor %ret : tensor<?x?x?x?xf32>
+    bufferization.dealloc_tensor %tmp : tensor<?x?x?x?xf32>
+
     return
   }
 
@@ -257,80 +207,79 @@ module {
     %c1024 = arith.constant 1024 : index
     %c2048 = arith.constant 2048 : index
 
-    call @runBenchmark(%c0, %c1, %c112, %c112, %c1, %c1, %c2, %c0, %c64, %c256) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    call @runBenchmark() : () -> ()
 
-    call @runBenchmark(%c1, %c1, %c56, %c56, %c1, %c1, %c1, %c0, %c64, %c64) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c1, %c1, %c56, %c56, %c1, %c1, %c1, %c0, %c64, %c64) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c2, %c1, %c56, %c56, %c1, %c1, %c1, %c0, %c256, %c64) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c2, %c1, %c56, %c56, %c1, %c1, %c1, %c0, %c256, %c64) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c3, %c1, %c56, %c56, %c3, %c3, %c1, %c1, %c64, %c64) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c3, %c1, %c56, %c56, %c3, %c3, %c1, %c1, %c64, %c64) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c4, %c1, %c56, %c56, %c1, %c1, %c1, %c0, %c64, %c256) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c4, %c1, %c56, %c56, %c1, %c1, %c1, %c0, %c64, %c256) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c5, %c1, %c56, %c56, %c1, %c1, %c2, %c0, %c256, %c512) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c5, %c1, %c56, %c56, %c1, %c1, %c2, %c0, %c256, %c512) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c6, %c1, %c56, %c56, %c1, %c1, %c1, %c0, %c256, %c128) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c6, %c1, %c56, %c56, %c1, %c1, %c1, %c0, %c256, %c128) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c7, %c1, %c56, %c56, %c3, %c3, %c2, %c1, %c128, %c128) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c7, %c1, %c56, %c56, %c3, %c3, %c2, %c1, %c128, %c128) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c8, %c1, %c28, %c28, %c1, %c1, %c1, %c0, %c512, %c128) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c8, %c1, %c28, %c28, %c1, %c1, %c1, %c0, %c512, %c128) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c9, %c1, %c28, %c28, %c3, %c3, %c1, %c1, %c128, %c128) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c9, %c1, %c28, %c28, %c3, %c3, %c1, %c1, %c128, %c128) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c10, %c1, %c28, %c28, %c1, %c1, %c1, %c0, %c128, %c512) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c10, %c1, %c28, %c28, %c1, %c1, %c1, %c0, %c128, %c512) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c11, %c1, %c28, %c28, %c1, %c1, %c2, %c0, %c512, %c1024) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c11, %c1, %c28, %c28, %c1, %c1, %c2, %c0, %c512, %c1024) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c12, %c1, %c28, %c28, %c1, %c1, %c1, %c0, %c512, %c256) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c12, %c1, %c28, %c28, %c1, %c1, %c1, %c0, %c512, %c256) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c13, %c1, %c28, %c28, %c3, %c3, %c2, %c1, %c256, %c256) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c13, %c1, %c28, %c28, %c3, %c3, %c2, %c1, %c256, %c256) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c14, %c1, %c14, %c14, %c1, %c1, %c1, %c0, %c256, %c1024) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c14, %c1, %c14, %c14, %c1, %c1, %c1, %c0, %c256, %c1024) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c15, %c1, %c14, %c14, %c1, %c1, %c1, %c0, %c1024, %c256) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c15, %c1, %c14, %c14, %c1, %c1, %c1, %c0, %c1024, %c256) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c16, %c1, %c14, %c14, %c3, %c3, %c1, %c1, %c256, %c256) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c16, %c1, %c14, %c14, %c3, %c3, %c1, %c1, %c256, %c256) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c17, %c1, %c14, %c14, %c1, %c1, %c1, %c0, %c256, %c1024) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c17, %c1, %c14, %c14, %c1, %c1, %c1, %c0, %c256, %c1024) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c18, %c1, %c14, %c14, %c1, %c1, %c2, %c0, %c1024, %c2048) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c18, %c1, %c14, %c14, %c1, %c1, %c2, %c0, %c1024, %c2048) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c19, %c1, %c14, %c14, %c1, %c1, %c1, %c0, %c1024, %c512) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c19, %c1, %c14, %c14, %c1, %c1, %c1, %c0, %c1024, %c512) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c20, %c1, %c14, %c14, %c3, %c3, %c2, %c1, %c512, %c512) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c20, %c1, %c14, %c14, %c3, %c3, %c2, %c1, %c512, %c512) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c21, %c1, %c7, %c7, %c1, %c1, %c1, %c0, %c512, %c2048) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c21, %c1, %c7, %c7, %c1, %c1, %c1, %c0, %c512, %c2048) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c22, %c1, %c7, %c7, %c1, %c1, %c1, %c0, %c2048, %c512) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c22, %c1, %c7, %c7, %c1, %c1, %c1, %c0, %c2048, %c512) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c23, %c1, %c7, %c7, %c3, %c3, %c1, %c1, %c512, %c512) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c23, %c1, %c7, %c7, %c3, %c3, %c1, %c1, %c512, %c512) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
-    call @runBenchmark(%c24, %c1, %c7, %c7, %c1, %c1, %c1, %c0, %c512, %c2048) :
-      (index, index, index, index, index, index, index, index , index, index) -> ()
+    // call @runBenchmark(%c24, %c1, %c7, %c7, %c1, %c1, %c1, %c0, %c512, %c2048) :
+    //   (index, index, index, index, index, index, index, index , index, index) -> ()
 
     return
   }
