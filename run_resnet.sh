@@ -55,12 +55,16 @@ CONFIG=(
          "s/BEN/24/g;s/N_VAL/1/g;s/H_VAL/7/g;s/W_VAL/7/g;s/R_VAL/1/g;s/S_VAL/1/g;s/STRIDE/1/g;s/C_VAL/512/g;s/M_VAL/2048/g"
        )
 
+echo "multi"
 for cfg in ${CONFIG[*]}; do
-  #sed $cfg ./input_sparse_benchmark.mlir | $MLIR_PATH/bin/mlir-opt  --canonicalize | $MLIR_PATH/bin/mlir-opt --sparsifier="parallelization-strategy=any-storage-any-loop" --mlir-print-ir-after-all
-  echo ""
-  #echo "multi"
+
   sed $cfg ./input_sparse_benchmark.mlir | $MLIR_PATH/bin/mlir-opt --canonicalize | $MLIR_PATH/bin/mlir-opt --sparsifier="parallelization-strategy=any-storage-any-loop" | mlir-cpu-runner -O3 -e entry -entry-point-result=void -shared-libs=$MLIR_PATH/lib/libmlir_c_runner_utils.so,$MLIR_PATH/lib/libmlir_runner_utils.so,$MLIR_PATH/lib/libmlir_async_runtime.so,$MLIR_PATH/lib/libomp.so
-  #echo "single"
-  sed $cfg ./input_sparse_benchmark.mlir | $MLIR_PATH/bin/mlir-opt --canonicalize | $MLIR_PATH/bin/mlir-opt --sparsifier="parallelization-strategy=none" | $MLIR_PATH/bin/mlir-cpu-runner -O3 -e entry -entry-point-result=void -shared-libs=$MLIR_PATH/lib/libmlir_c_runner_utils.so,$MLIR_PATH/lib/libmlir_runner_utils.so
+
+done
+
+echo "single"
+for cfg in ${CONFIG[*]}; do
+
+  sed $cfg ./input_sparse_benchmark.mlir | $MLIR_PATH/bin/mlir-opt --canonicalize | $MLIR_PATH/bin/mlir-opt --sparsifier="parallelization-strategy=none" | $MLIR_PATH/bin/mlir-cpu-runner  -O3 -e entry -entry-point-result=void -shared-libs=$MLIR_PATH/lib/libmlir_c_runner_utils.so,$MLIR_PATH/lib/libmlir_runner_utils.so
 
 done
