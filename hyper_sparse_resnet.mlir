@@ -119,7 +119,7 @@ module {
     %reshaped_filter = tensor.reshape %dense_filter(%filter_shape) : (tensor<?x?xf32>, tensor<4xindex>) -> tensor<?x?x?x?xf32>
 
     // Construct input.
-    %input_sparsity = arith.constant 999 : index // 99.9%
+    %input_sparsity = arith.constant SPARSITY : index // 99.9%
     %input = call @get_sparse_4d_tensor(%N, %H, %W, %C, %input_sparsity) :(index, index, index, index, index) -> (tensor<?x?x?x?xf32>)
     %sparse_input = sparse_tensor.convert %input: tensor<?x?x?x?xf32> to tensor<?x?x?x?xf32, #FORMAT>
 
