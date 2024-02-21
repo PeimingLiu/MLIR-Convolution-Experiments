@@ -96,6 +96,7 @@ module {
     return %tnsr : tensor<?x?xf64>
   }
 
+  // Generalizes linalg.conv_2d to specifies loop schedules.
   func.func @conv_2d_DC_dense_SCHEDULE(%arg0: tensor<?x?xf64, #DC>, %arg1: tensor<?x?xf64>, %arg2: tensor<?x?xf64>) -> tensor<?x?xf64> {
     %0 = linalg.generic #SCHEDULE
     ins(%arg0, %arg1 : tensor<?x?xf64, #DC>, tensor<?x?xf64>) outs(%arg2 : tensor<?x?xf64>) attrs =  {sorted = true} {
@@ -119,13 +120,7 @@ module {
   }
 
   func.func @conv_2d_dense_dense_SCHEDULE(%arg0: tensor<?x?xf64>, %arg1: tensor<?x?xf64>, %arg2: tensor<?x?xf64>) -> tensor<?x?xf64> {
-    %0 = linalg.generic #SCHEDULE
-    ins(%arg0, %arg1 : tensor<?x?xf64>, tensor<?x?xf64>) outs(%arg2 : tensor<?x?xf64>) attrs =  {sorted = true} {
-    ^bb0(%in: f64, %in_0: f64, %out: f64):
-      %1 = arith.mulf %in, %in_0 : f64
-      %2 = arith.addf %out, %1 : f64
-      linalg.yield %2 : f64
-    } -> tensor<?x?xf64>
+    %0 = linalg.conv_2d ins(%arg0, %arg1 : tensor<?x?xf64>, tensor<?x?xf64>) outs(%arg2 : tensor<?x?xf64>) -> tensor<?x?xf64>
     return %0 : tensor<?x?xf64>
   }
 

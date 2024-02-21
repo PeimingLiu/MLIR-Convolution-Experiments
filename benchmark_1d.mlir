@@ -69,7 +69,8 @@ module {
     return %tnsr : tensor<?xf64>
   }
 
-   func.func @conv_1d_sparse_dense(%arg0: tensor<?xf64, #INPUT>, %arg1: tensor<?xf64>, %arg2: tensor<?xf64>) -> tensor<?xf64> {
+  // Generalizes linalg.conv_1d to specifies loop schedules.
+  func.func @conv_1d_sparse_dense(%arg0: tensor<?xf64, #INPUT>, %arg1: tensor<?xf64>, %arg2: tensor<?xf64>) -> tensor<?xf64> {
      %0 = linalg.generic #SCHEDULE
           ins(%arg0, %arg1 : tensor<?xf64, #INPUT>, tensor<?xf64>) outs(%arg2 : tensor<?xf64>) attrs =  {sorted = true} {
      ^bb0(%in: f64, %in_0: f64, %out: f64):
@@ -78,16 +79,11 @@ module {
        linalg.yield %2 : f64
      } -> tensor<?xf64>
      return %0 : tensor<?xf64>
-   }
+  }
 
   func.func @conv_1d_dense_dense(%arg0: tensor<?xf64>, %arg1: tensor<?xf64>, %arg2: tensor<?xf64>) -> tensor<?xf64> {
-     %0 = linalg.generic #SCHEDULE
-          ins(%arg0, %arg1 : tensor<?xf64>, tensor<?xf64>) outs(%arg2 : tensor<?xf64>) attrs =  {sorted = true} {
-     ^bb0(%in: f64, %in_0: f64, %out: f64):
-       %1 = arith.mulf %in, %in_0 : f64
-       %2 = arith.addf %out, %1 : f64
-       linalg.yield %2 : f64
-     } -> tensor<?xf64>
+     %0 = linalg.conv_1d
+          ins(%arg0, %arg1 : tensor<?xf64>, tensor<?xf64>) outs(%arg2 : tensor<?xf64>) -> tensor<?xf64>
     return %0 : tensor<?xf64>
   }
 

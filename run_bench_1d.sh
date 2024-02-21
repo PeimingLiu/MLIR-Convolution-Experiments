@@ -6,7 +6,7 @@ ORDERS=(pr rp)
 for ORD in ${ORDERS[*]};
 do
   echo $ORD > ./result/bench1d_result_${ORD}.txt
-  sed "s/LEN/${INPUT_WIDTH}/g;s/SCHEDULE/${ORD}/g;s/REPEAT/${REPEAT}/g" benchmark_1d.mlir | $MLIR_PATH/bin/mlir-opt --sparsifier="enable-runtime-library=true" | mlir-cpu-runner -e entry -entry-point-result=void -shared-libs=$MLIR_PATH/lib/libmlir_c_runner_utils.so,$MLIR_PATH/lib/libmlir_runner_utils.so >> ./result/bench1d_result_${ORD}.txt
+  sed "s/LEN/${INPUT_WIDTH}/g;s/SCHEDULE/${ORD}/g;s/REPEAT/${REPEAT}/g" benchmark_1d.mlir | $MLIR_PATH/bin/mlir-opt --sparsifier="enable-runtime-library=true" | mlir-cpu-runner -O3 -e entry -entry-point-result=void -shared-libs=$MLIR_PATH/lib/libmlir_c_runner_utils.so,$MLIR_PATH/lib/libmlir_runner_utils.so >> ./result/bench1d_result_${ORD}.txt
 
   exec 5< ./result/bench1d_result_${ORD}.txt
   # empty file.
